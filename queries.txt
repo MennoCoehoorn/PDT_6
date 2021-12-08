@@ -1,0 +1,34 @@
+2:
+MATCH (a:Account)
+WITH a, SIZE(()-[:FOLLOWS]->(a)) as followerCnt
+ORDER BY followerCnt DESC LIMIT 5
+RETURN a
+
+3:
+a:
+MATCH (a:Account {screen_name: "katyperry"}),
+      (b:Account {screen_name: "KimKardashian"})
+MATCH path=shortestPath((a)-[:FOLLOWS*]-(b))
+RETURN path
+b:
+MATCH (a:Account {screen_name: "realDonaldTrump"}),
+    (b:Account {screen_name: "katyperry"})
+RETURN (a)-[:FOLLOWS*4]->(b)
+
+4:
+MATCH (t:Tweet)
+WITH t, SIZE(()-[:RETWEETS]->(t)) as rCnt
+ORDER BY rCnt DESC LIMIT 10
+MATCH (bad:Tweet {author_id: t.author_id}) 
+WITH bad,SIZE(()-[:RETWEETS]->(bad)) as brCnt
+ORDER BY brCnt ASC LIMIT 10
+RETURN bad
+
+6:
+MATCH (stl:Account {screen_name: '777stl'})-[:FOLLOWS]->(follower:Account),
+(fofollower:Account)-[:FOLLOWS]->(follower)
+WHERE stl <> fofollower
+AND fofollower <> follower
+WITH fofollower,SIZE((fofollower)-[:FOLLOWS]->(follower)) as followerCnt
+ORDER BY followerCnt DESC LIMIT 10
+RETURN fofollower
