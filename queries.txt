@@ -16,13 +16,24 @@ MATCH (a:Account {screen_name: "realDonaldTrump"}),
 RETURN (a)-[:FOLLOWS*4]->(b)
 
 4:
-MATCH (t:Tweet)
-WITH t, SIZE(()-[:RETWEETS]->(t)) as rCnt
+MATCH (a:Account)-[:POSTS]->(t:Tweet)
+WITH t,a, SIZE(()-[:RETWEETS]->(t)) as rCnt
 ORDER BY rCnt DESC LIMIT 10
-MATCH (bad:Tweet {author_id: t.author_id}) 
+MATCH (a)-[:POSTS]->(bad:Tweet) 
 WITH bad,SIZE(()-[:RETWEETS]->(bad)) as brCnt
 ORDER BY brCnt ASC LIMIT 10
 RETURN bad
+
+5:
+MATCH (a:Account {screen_name: 'realDonaldTrump'})-[:POSTS]->(t:Tweet)
+WITH t, SIZE(()-[:RETWEETS]->(t)) as rCnt
+ORDER BY rCnt DESC LIMIT 1
+WITH t
+MATCH (donald:Account {screen_name: 'realDonaldTrump'})
+CREATE (me:Account {screen_name:'MennoCoehoorn', name:'Marek Štrba', id:'18111998'})
+CREATE (mytweet:Tweet {content:t.content, author_id:me.id})
+CREATE (me)-[r:FOLLOWS]->(donald)
+CREATE (mytweet)-[rt:RETWEETS]->(t)
 
 6:
 MATCH (stl:Account {screen_name: '777stl'})-[:FOLLOWS]->(follower:Account),
@@ -32,3 +43,28 @@ AND fofollower <> follower
 WITH fofollower,SIZE((fofollower)-[:FOLLOWS]->(follower)) as followerCnt
 ORDER BY followerCnt DESC LIMIT 10
 RETURN fofollower
+
+7:
+MATCH (dayner:Account {screen_name:"DaynerWilson"})
+OPTIONAL MATCH (dayner)-[:FOLLOWS]->(followed:Account)
+MATCH (dayner)-[:POSTS]->(:Tweet)-[:RETWEETS*1..]->(dTweets:Tweet)
+MATCH (toFollow:Account)-[:POSTS]->(:Tweet)-[:RETWEETS*1..]->(dTweets)
+WHERE toFollow <> dayner AND toFollow <> followed
+WITH toFollow, SIZE((toFollow:Account)-[:POSTS]->(:Tweet)-[:RETWEETS*1..]->(dTweets)) as rCnt
+ORDER BY rCnt DESC
+LIMIT 10 
+RETURN toFollow 
+
+8:
+MATCH (a:Account)-[:POSTS]->(t:Tweet {id: "1289380305728503808"})
+MATCH (followers:Account)-[:FOLLOWS*1..5]->(a)
+MATCH (followers)-[:POSTS]->(fTweets:Tweet) WHERE NOT (fTweets)-[:RETWEETS]->(t)
+WITH split(t.content, ' ')as tSplit,split(fTweets.content,' ') as fTSplit, fTweets
+WITH tSplit, fTSplit, fTweets, SIZE(apoc.coll.intersection(tSplit,fTSplit)) as splitScore
+ORDER BY splitScore DESC 
+LIMIT 5
+RETURN fTweets.id, splitScore
+
+Bonus:
+MATCH (katy:Account {screen_name: 'katyperry'}), (donald:Account {screen_name: 'realDonaldTrump'}), paths = (katy)-[*]->(donald) WHERE all(rel in relationships(paths) WHERE rel.type = 'POSTS' OR rel.type = 'RETWEETS')
+RETURN paths
