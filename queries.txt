@@ -47,13 +47,12 @@ RETURN fofollower
 7:
 MATCH (dayner:Account {screen_name:"DaynerWilson"})
 OPTIONAL MATCH (dayner)-[:FOLLOWS]->(followed:Account)
-MATCH (dayner)-[:POSTS]->(:Tweet)-[:RETWEETS*1..]->(dTweets:Tweet)
-MATCH (toFollow:Account)-[:POSTS]->(:Tweet)-[:RETWEETS*1..]->(dTweets)
+MATCH (dayner)-[:POSTS]->(:Tweet)-[:RETWEETS*]->(dTweets:Tweet)<-[:RETWEETS*]-(:Tweet)<-[:POSTS]-(toFollow:Account)
 WHERE toFollow <> dayner AND toFollow <> followed
-WITH toFollow, SIZE((toFollow:Account)-[:POSTS]->(:Tweet)-[:RETWEETS*1..]->(dTweets)) as rCnt
+WITH toFollow, sum(size((toFollow)-[:POSTS]->(:Tweet)-[:RETWEETS*1..]->(dTweets))) as rCnt
 ORDER BY rCnt DESC
-LIMIT 10 
-RETURN toFollow 
+LIMIT 10
+RETURN  toFollow
 
 8:
 MATCH (a:Account)-[:POSTS]->(t:Tweet {id: "1289380305728503808"})
@@ -66,5 +65,21 @@ LIMIT 5
 RETURN fTweets.id, splitScore
 
 Bonus:
-MATCH (katy:Account {screen_name: 'katyperry'}), (donald:Account {screen_name: 'realDonaldTrump'}), paths = (katy)-[*]->(donald) WHERE all(rel in relationships(paths) WHERE rel.type = 'POSTS' OR rel.type = 'RETWEETS')
-RETURN paths
+MATCH (katy:Account {screen_name: 'katyperry'}), (donald:Account {screen_name: 'realDonaldTrump'})
+CALL apoc.path.expandConfig(katy, {
+    relationshipFilter: "POSTS|RETWEETS",
+    minLevel:1,
+    maxLevel:15,
+    terminatorNodes: [donald]
+})
+YIELD path
+WITH katy,donald,path,length(path) as hops
+WITH katy,donald,min(hops) as minHops
+CALL apoc.path.expandConfig(katy, {
+    relationshipFilter: "POSTS|RETWEETS",
+    minLevel:1,
+    maxLevel:minHops,
+    terminatorNodes: [donald]
+})
+YIELD path
+RETURN path
