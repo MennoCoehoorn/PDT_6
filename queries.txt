@@ -11,7 +11,7 @@ MATCH (a:Account {screen_name: "katyperry"}),
 MATCH path=shortestPath((a)-[:FOLLOWS*]-(b))
 RETURN path
 b:
-MATCH (a:Account {screen_name: "realDonaldTrump"}),
+MATCH (a:Account {screen_name: "KimKardashian"}),
     (b:Account {screen_name: "katyperry"})
 RETURN (a)-[:FOLLOWS*4]->(b)
 
